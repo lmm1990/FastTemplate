@@ -1,0 +1,2 @@
+﻿{{using Common;}}
+<h1>currentTime:{{Tools.DateToString(data["time"])}}</h1>

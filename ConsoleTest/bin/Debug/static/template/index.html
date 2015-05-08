@@ -1,0 +1,7 @@
+﻿{{layout "/static/template/Layout.html"}}
+{{setData cssList = [
+    "/static/css/base.css",
+    "/static/css/style.css"]
+}}
+{{setData title = String.Format("{0}Url",data["id"] > 0 ? "修改" : "添加")}}
+I'm Index Welcome to {{data["cityName"]}}

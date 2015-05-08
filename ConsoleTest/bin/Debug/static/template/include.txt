@@ -1,0 +1,4 @@
+﻿{{include "/static/template/base.txt"}}
+{{each data["list"] as areaItem a}}
+    {{areaItem}},
+{{/each}}

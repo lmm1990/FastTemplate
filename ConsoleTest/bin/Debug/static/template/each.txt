@@ -1,0 +1,13 @@
+﻿<h1>{{data["title"]}}</h1>
+<ul>
+    {{each data["indexList"] as value i}}
+        <li>索引 {{i + 1}} ：
+    {{if value == 1}}
+    <p>admin</p>
+    {{else if value  == 2}}
+    <p>master</p>
+    {{else}}
+    <p>error!</p>
+    {{/if}}</li>
+{{/each}}
+</ul>

@@ -1,0 +1,32 @@
+﻿<ul>
+@foreach (var level1 in Model)
+{
+    <li id="level1_@level1.Key.Id">
+        <div>@level1.Key.Name</div>
+        <ul>
+        @foreach (var level2 in level1.Value)
+        {
+            <li id="level2_@level2.Key.Id">
+                <div>@level2.Key.Name</div>
+                <ul>
+                @foreach (var level3 in level2.Value)
+                {
+                    <li id="level3_@level3.Key.Id">
+                        <div>@level3.Key.Name</div>
+                        <ul>
+                        @foreach (var level4 in level3.Value)
+                        {
+                            <li id="level4_@level4.Id">
+                            <div>@level4.Name</div>
+                            </li>
+                        }
+                        </ul>
+                    </li>
+                }
+                </ul>
+            </li>
+        }
+        </ul>
+    </li>
+}
+</ul>

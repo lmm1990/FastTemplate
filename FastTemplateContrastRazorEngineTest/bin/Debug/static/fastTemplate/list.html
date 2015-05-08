@@ -1,0 +1,28 @@
+﻿<ul>
+{{each data["list"] as level1}}
+    <li id="level1_{{level1.Key.Id}}">
+        <div>{{level1.Key.Name}}</div>
+        <ul>
+        {{each level1.Value as level2}}
+            <li id="level2_{{level2.Key.Id}}">
+                <div>{{level2.Key.Name}}</div>
+                <ul>
+                {{each level2.Value as level3}}
+                    <li id="level3_{{level3.Key.Id}}">
+                        <div>{{level3.Key.Name}}</div>
+                        <ul>
+                        {{each level3.Value as level4}}
+                            <li id="level4_{{level4.Id}}">
+                            <div>{{level4.Name}}</div>
+                            </li>
+                        {{/each}}
+                        </ul>
+                    </li>
+                {{/each}}
+                </ul>
+            </li>
+        {{/each}}
+        </ul>
+    </li>
+{{/each}}
+</ul>
