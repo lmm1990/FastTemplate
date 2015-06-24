@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.CSharp;
-using System.CodeDom; 
+using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Linq;
 using System.Web;
@@ -17,6 +17,7 @@ namespace FastTemplate
         public TemplateEngine()
         {
             IsDebug = false;
+            IsZipTemplate = true;
             IsWeb = File.Exists(string.Format("{0}/Web.config"));
         }
 
@@ -24,18 +25,23 @@ namespace FastTemplate
         private static HashSet<string> referencedAssemblieList = new HashSet<string> { 
             "System.dll","System.Core.dll","Microsoft.CSharp.dll"
         };
-        
+
         /// <summary>
         ///     <para>是否是调试模式</para>
         /// </summary>
         public static bool IsDebug { get; set; }
 
         /// <summary>
+        ///     <para>是否压缩模版</para>
+        /// </summary>
+        public static bool IsZipTemplate { get; set; }
+
+        /// <summary>
         ///     <para>是否是web站点</para>
         /// </summary>
         private static bool IsWeb { get; set; }
 
-        private static readonly string rootPath = AppDomain.CurrentDomain.BaseDirectory.Replace("\\","/");
+        private static readonly string rootPath = AppDomain.CurrentDomain.BaseDirectory.Replace("\\", "/");
         private static Dictionary<string, MethodInfo> templateMethodList = new Dictionary<string, MethodInfo>();
 
         #region 模版初始化，预编译
@@ -44,21 +50,21 @@ namespace FastTemplate
         /// </summary>
         /// <param name="_referencedAssemblieList">程序集列表（程序集必须存在Bin目录）</param>
         /// <param name="templatePath">模版路径（相对于根目录）</param>
-        public static void Init(HashSet<string> _referencedAssemblieList,string templatePath = "/static/template")
+        public static void Init(HashSet<string> _referencedAssemblieList, string templatePath = "/static/template")
         {
-            if(_referencedAssemblieList == null)
+            if (_referencedAssemblieList == null)
             {
                 throw new Exception("_referencedAssemblieList 不能为NULL");
             }
             foreach (string item in _referencedAssemblieList)
             {
-                if(IsWeb)
+                if (IsWeb)
                 {
-                    referencedAssemblieList.Add(string.Format(@"{0}\bin\{1}",rootPath,item));
+                    referencedAssemblieList.Add(string.Format(@"{0}\bin\{1}", rootPath, item));
                 }
                 else
                 {
-                    referencedAssemblieList.Add(string.Format(@"{0}\{1}",rootPath,item));
+                    referencedAssemblieList.Add(string.Format(@"{0}\{1}", rootPath, item));
                 }
             }
             templatePath = string.Format("{0}{1}", rootPath, templatePath);
@@ -78,28 +84,28 @@ namespace FastTemplate
             classContent.Append("public static class Template{");
             foreach (string item in fileList)
             {
-                if(item.IndexOf("Layout") > -1)
+                if (item.IndexOf("Layout") > -1)
                 {
                     continue;
                 }
                 fileName = string.Format("/{0}", item.Replace("\\", "/").Replace(rootPath, ""));
                 methodName = GetMethodName(fileName);
                 methodNameList.Add(methodName);
-                templateBlockList = PreProcessTemplate(File.ReadAllText(rootPath+fileName));
+                templateBlockList = PreProcessTemplate(File.ReadAllText(rootPath + fileName));
                 //预处理 include
                 PreProcessIncludeBlock(ref templateBlockList);
-                classContent.Append(GenerateTemplateMethodCode(methodName,templateBlockList,ref usingContent));
+                classContent.Append(GenerateTemplateMethodCode(methodName, templateBlockList, ref usingContent));
             }
             classContent.Append(Environment.NewLine);
             classContent.Append("}");
 
-            classContent.Insert(0, string.Join("",usingContent));
+            classContent.Insert(0, string.Join("", usingContent));
             //编译
             Assembly assembly = CompileTemplate(classContent.ToString());
             Type classType = assembly.GetTypes()[0];
             foreach (string item in methodNameList)
             {
-                templateMethodList.Add(item,classType.GetMethod(item));
+                templateMethodList.Add(item, classType.GetMethod(item));
             }
         }
         #endregion
@@ -110,7 +116,7 @@ namespace FastTemplate
         /// </summary>
         /// <param name="dir">目录</param>
         /// <param name="fileList">文件列表</param>
-        private static void GetAll(DirectoryInfo dir,List<string> fileList)
+        private static void GetAll(DirectoryInfo dir, List<string> fileList)
         {
             foreach (FileInfo item in dir.GetFiles())
             {
@@ -118,7 +124,7 @@ namespace FastTemplate
             }
             foreach (DirectoryInfo item in dir.GetDirectories())
             {
-                GetAll(item,fileList);
+                GetAll(item, fileList);
             }
         }
         #endregion
@@ -130,14 +136,14 @@ namespace FastTemplate
         /// <param name="fileName">文件名</param>
         /// <param name="data">数据</param>
         /// <returns></returns>
-        public static string Compile(string fileName,Dictionary<string, dynamic> data)
+        public static string Compile(string fileName, Dictionary<string, dynamic> data)
         {
             string methodName = GetMethodName(fileName);
-            if(templateMethodList.ContainsKey(methodName) && !IsDebug)
+            if (templateMethodList.ContainsKey(methodName) && !IsDebug)
             {
-                return templateMethodList[methodName].Invoke(null, new object[] {data}).ToString();
+                return templateMethodList[methodName].Invoke(null, new object[] { data }).ToString();
             }
-            return Compile(methodName,fileName,data);
+            return Compile(methodName, fileName, data);
         }
         #endregion
 
@@ -150,9 +156,9 @@ namespace FastTemplate
         /// <param name="response"></param>
         /// <param name="fileName">文件名</param>
         /// <param name="data">数据</param>
-        public static void CompileOutResponse(HttpResponse response,string fileName, Dictionary<string, dynamic> data)
+        public static void CompileOutResponse(HttpResponse response, string fileName, Dictionary<string, dynamic> data)
         {
-            response.Write(Compile(fileName,data));
+            response.Write(Compile(fileName, data));
         }
         #endregion
 
@@ -175,26 +181,29 @@ namespace FastTemplate
                 templateContent = flog.Replace("{{RenderBody}}", templateContent);
             }
             List<string> tempList = new List<string>();
-            templateContent = Regex.Replace(templateContent,"\r", "", RegexOptions.Multiline);
-            templateContent = Regex.Replace(templateContent,"\n", "", RegexOptions.Multiline);
-            templateContent = Regex.Replace(templateContent,"\t", "", RegexOptions.Multiline);
-            templateContent = Regex.Replace(templateContent,"  ", "", RegexOptions.Multiline);
-            
+            if (IsZipTemplate)
+            {
+                templateContent = Regex.Replace(templateContent, "\r", "", RegexOptions.Multiline);
+                templateContent = Regex.Replace(templateContent, "\n", "", RegexOptions.Multiline);
+                templateContent = Regex.Replace(templateContent, "\t", "", RegexOptions.Multiline);
+                templateContent = Regex.Replace(templateContent, "  ", "", RegexOptions.Multiline);
+            }
+
             int index = 0;
             int newIndex = 0;
-            while(true)
+            while (true)
             {
-                index = templateContent.IndexOf("{{",index);
-                if(index == -1)
+                index = templateContent.IndexOf("{{", index);
+                if (index == -1)
                 {
-                    if(newIndex != templateContent.Length-1)
+                    if (newIndex != templateContent.Length - 1)
                     {
                         tempList.Add(templateContent.Substring(newIndex));
                     }
                     break;
                 }
                 tempList.Add(templateContent.Substring(newIndex, index - newIndex));
-                newIndex = templateContent.IndexOf("}}",index)+2;
+                newIndex = templateContent.IndexOf("}}", index) + 2;
                 tempList.Add(templateContent.Substring(index, newIndex - index));
                 index = newIndex;
             }
@@ -213,12 +222,12 @@ namespace FastTemplate
                     continue;
                 }
                 flog = flog.Substring(flog.IndexOf(' ') + 1);
-                if(flog.IndexOf("= [") > -1)
+                if (flog.IndexOf("= [") > -1)
                 {
                     flog = flog.Replace("[", "new List<string>{").Replace("]", "}");
                 }
                 flog = flog.Replace(" = ", "\"] = ");
-                list.Insert(0, string.Format("setData[\"{0};",flog ));
+                list.Insert(0, string.Format("setData[\"{0};", flog));
             }
             return list;
         }
@@ -233,23 +242,23 @@ namespace FastTemplate
         {
             string flog;
             List<string> tempBlockList;
-            for (int i = 0,length = templateBlockList.Count; i < length; i++)
-			{
-                if(templateBlockList[i].Length < 6)
+            for (int i = 0, length = templateBlockList.Count; i < length; i++)
+            {
+                if (templateBlockList[i].Length < 6)
                 {
                     continue;
                 }
-                flog = templateBlockList[i].Substring(2,templateBlockList[i].Length-4).Trim();
+                flog = templateBlockList[i].Substring(2, templateBlockList[i].Length - 4).Trim();
                 if (!templateBlockList[i].StartsWith("{{include"))
                 {
                     continue;
                 }
-                if(templateBlockList.Count > 100000)
+                if (templateBlockList.Count > 100000)
                 {
                     throw new Exception("代码块不能超过10万行");
                 }
-                flog = flog.Split(' ')[1].Replace("\"","");
-                tempBlockList = PreProcessTemplate(File.ReadAllText(rootPath+flog));
+                flog = flog.Split(' ')[1].Replace("\"", "");
+                tempBlockList = PreProcessTemplate(File.ReadAllText(rootPath + flog));
                 templateBlockList.RemoveAt(i);
                 templateBlockList.InsertRange(i, tempBlockList);
                 PreProcessIncludeBlock(ref templateBlockList);
@@ -265,9 +274,9 @@ namespace FastTemplate
         /// <returns></returns>
         private static string GetMethodName(string fileName)
         {
-            string methodName = fileName.Replace("/","_");
+            string methodName = fileName.Replace("/", "_");
             int index = methodName.IndexOf('.');
-            if(index > -1)
+            if (index > -1)
             {
                 methodName = methodName.Substring(0, index);
             }
@@ -283,10 +292,10 @@ namespace FastTemplate
         /// <param name="fileName">文件名</param>
         /// <param name="data">数据</param>
         /// <returns></returns>
-        private static string Compile(string methodName,string fileName,Dictionary<string, dynamic> data)
+        private static string Compile(string methodName, string fileName, Dictionary<string, dynamic> data)
         {
-            List<string> templateBlockList = PreProcessTemplate(File.ReadAllText(rootPath+fileName));
-            
+            List<string> templateBlockList = PreProcessTemplate(File.ReadAllText(rootPath + fileName));
+
             //预处理 include
             PreProcessIncludeBlock(ref templateBlockList);
 
@@ -298,15 +307,15 @@ namespace FastTemplate
             usingContent.Add("using Microsoft.CSharp;");
             usingContent.Add("using System.Text;");
             classContent.Append("public static class Template{");
-            classContent.Append(GenerateTemplateMethodCode(methodName,templateBlockList,ref usingContent));
+            classContent.Append(GenerateTemplateMethodCode(methodName, templateBlockList, ref usingContent));
             classContent.Append(Environment.NewLine);
             classContent.Append("}");
 
-            classContent.Insert(0, string.Join("",usingContent));
+            classContent.Insert(0, string.Join("", usingContent));
             //编译
             Assembly assembly = CompileTemplate(classContent.ToString());
             MethodInfo objMI = assembly.GetTypes()[0].GetMethod(methodName);
-            if(!IsDebug)
+            if (!IsDebug)
             {
                 templateMethodList.Add(methodName, objMI);
             }
@@ -321,15 +330,15 @@ namespace FastTemplate
         /// <param name="methodName">方法名</param>
         /// <param name="templateBlockList">模版块列表</param>
         /// <returns></returns>
-        private static string GenerateTemplateMethodCode(string methodName,List<string> templateBlockList,ref HashSet<string> usingContent)
+        private static string GenerateTemplateMethodCode(string methodName, List<string> templateBlockList, ref HashSet<string> usingContent)
         {
             StringBuilder code = new StringBuilder();
-            code.AppendFormat("public static string {0}(dynamic data)",methodName);
+            code.AppendFormat("public static string {0}(dynamic data)", methodName);
             code.Append("{");
             code.Append("if (data == null){");
             code.Append("data = new Dictionary<string, dynamic> { };}");
             code.Append("StringBuilder code = new StringBuilder();");
-            
+
             string flog;
             foreach (string item in templateBlockList)
             {
@@ -340,12 +349,12 @@ namespace FastTemplate
                 }
                 if (item.IndexOf("{{") == -1)
                 {
-                    code.Append(string.Format(@"code.Append(""{0}"");", item.Replace("\"", "\\\"")));
+                    code.Append(string.Format(@"code.Append(@""{0}"");", item.Replace("\"", "\"\"")));
                     continue;
                 }
                 flog = item.Substring(2, item.Length - 4).Trim();
                 //using
-                if(flog.StartsWith("using"))
+                if (flog.StartsWith("using"))
                 {
                     usingContent.Add(flog);
                     continue;
@@ -358,9 +367,9 @@ namespace FastTemplate
                 if (flog.StartsWith("each"))
                 {
                     string[] eachInfoList = flog.Split(' ');
-                    if(eachInfoList.Length == 4)
+                    if (eachInfoList.Length == 4)
                     {
-                        code.AppendFormat("foreach (var {0} in {1})",eachInfoList[3], eachInfoList[1]);
+                        code.AppendFormat("foreach (var {0} in {1})", eachInfoList[3], eachInfoList[1]);
                         code.Append("{");
                         continue;
                     }
@@ -403,7 +412,7 @@ namespace FastTemplate
 
             }
             code.Append("return code.ToString();");
-            
+
             code.Append("}");
             return code.ToString();
         }
@@ -422,14 +431,14 @@ namespace FastTemplate
             objCompilerParameters.ReferencedAssemblies.AddRange(referencedAssemblieList.ToArray());
             objCompilerParameters.GenerateExecutable = false;
             objCompilerParameters.GenerateInMemory = true;
-            CompilerResults result = objCSharpCodePrivoder.CompileAssemblyFromSource(objCompilerParameters,content);
+            CompilerResults result = objCSharpCodePrivoder.CompileAssemblyFromSource(objCompilerParameters, content);
             if (result.Errors.HasErrors)
             {
                 StringBuilder errorList = new StringBuilder();
                 errorList.Append("编译错误：");
                 foreach (CompilerError err in result.Errors)
                 {
-                    errorList.AppendFormat("{0}\r\n",err.ErrorText);
+                    errorList.AppendFormat("{0}\r\n", err.ErrorText);
                 }
                 throw new Exception(errorList.ToString());
             }
